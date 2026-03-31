@@ -11,9 +11,8 @@ class User {
     this.createdAt = new Date().toISOString();
   }
 
-  // BUG 11: email validation regex is wrong (doesn't require TLD)
   static isValidEmail(email) {
-    return /^[^\s@]+@[^\s@]+$/.test(email);  // missing TLD check
+    return /^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email);
   }
 
   static getAll() {
@@ -21,8 +20,7 @@ class User {
   }
 
   static getByEmail(email) {
-    // BUG 12: case-sensitive email lookup
-    return users.find(u => u.email === email);
+    return users.find(u => u.email.toLowerCase() === email.toLowerCase());
   }
 
   static create(data) {
@@ -34,8 +32,7 @@ class User {
       throw new Error('Invalid email format');
     }
 
-    // BUG 13: duplicate check uses wrong field
-    const existing = users.find(u => u.name === data.email);
+    const existing = users.find(u => u.email.toLowerCase() === data.email.toLowerCase());
     if (existing) {
       throw new Error('User with this email already exists');
     }
@@ -51,11 +48,9 @@ class User {
     return users.length !== initialLength;
   }
 
-  // BUG 14: getUserTaskCount references Task but doesn't import it properly
   static getUserTaskCount(userId) {
     const Task = require('./Task');
     const allTasks = Task.getAll();
-    // BUG 15: compares assignee (name) with userId (uuid)
     return allTasks.filter(t => t.assignee === userId).length;
   }
 

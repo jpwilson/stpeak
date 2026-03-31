@@ -14,8 +14,7 @@ router.post('/', (req, res) => {
     const user = User.create(req.body);
     res.status(201).json({ success: true, data: user });
   } catch (err) {
-    // BUG 32: returns 500 for validation errors (should be 400)
-    res.status(500).json({ success: false, error: err.message });
+    res.status(400).json({ success: false, error: err.message });
   }
 });
 

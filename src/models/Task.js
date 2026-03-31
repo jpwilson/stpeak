@@ -9,18 +9,16 @@ class Task {
     this.title = title;
     this.description = description;
     this.assignee = assignee;
-    // BUG 4: priority validation is backwards
-    this.priority = ['low', 'medium', 'high'].includes(priority) ? 'medium' : priority;
+    this.priority = ['low', 'medium', 'high'].includes(priority) ? priority : 'medium';
     this.status = 'pending';
     this.createdAt = new Date().toISOString();
     this.updatedAt = new Date().toISOString();
     this.completedAt = null;
   }
 
-  // BUG 5: static method references wrong variable name
   static getAll(filterStatus) {
     if (filterStatus) {
-      return task.filter(t => t.status === filterStatus);  // 'task' should be 'tasks'
+      return tasks.filter(t => t.status === filterStatus);
     }
     return [...tasks];
   }
@@ -35,7 +33,6 @@ class Task {
     return task;
   }
 
-  // BUG 6: update doesn't actually save the changes back
   static update(id, updates) {
     const taskIndex = tasks.findIndex(t => t.id === id);
     if (taskIndex === -1) return null;
@@ -47,26 +44,22 @@ class Task {
       }
     });
     task.updatedAt = new Date().toISOString();
-
-    // BUG: Never writes task back to the array
-    // tasks[taskIndex] = task;  <-- this line is missing
+    tasks[taskIndex] = task;
 
     return task;
   }
 
-  // BUG 7: delete uses wrong comparison operator
   static delete(id) {
     const initialLength = tasks.length;
-    tasks = tasks.filter(t => t.id == id);  // == instead of !==, deletes everything EXCEPT the target
+    tasks = tasks.filter(t => t.id !== id);
     return tasks.length !== initialLength;
   }
 
-  // BUG 8: complete method sets wrong status value
   static complete(id) {
     const task = tasks.find(t => t.id === id);
     if (!task) return null;
 
-    task.status = 'compleete';  // typo in status
+    task.status = 'completed';
     task.completedAt = new Date().toISOString();
     task.updatedAt = new Date().toISOString();
     return task;
@@ -74,7 +67,6 @@ class Task {
 
   static getStats() {
     const total = tasks.length;
-    // BUG 9: counts pending tasks as completed due to wrong status string
     const completed = tasks.filter(t => t.status === 'completed').length;
     const pending = tasks.filter(t => t.status === 'pending').length;
     const inProgress = tasks.filter(t => t.status === 'in-progress').length;
@@ -84,8 +76,7 @@ class Task {
       completed,
       pending,
       inProgress,
-      // BUG 10: division by zero not handled, and logic is wrong
-      completionRate: (completed / total) * 100
+      completionRate: total === 0 ? 0 : (completed / total) * 100
     };
   }
 

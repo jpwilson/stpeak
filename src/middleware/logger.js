@@ -1,19 +1,18 @@
-// BUG 22: logger middleware doesn't call next()
 function logger(req, res, next) {
   const timestamp = new Date().toISOString();
   console.log(`[${timestamp}] ${req.method} ${req.url}`);
-  // missing next() call - will hang every request
+  next();
 }
 
-// BUG 23: auth middleware checks header wrong
 function requireAuth(req, res, next) {
-  const token = req.headers['authorization'];
+  const authHeader = req.headers['authorization'];
 
-  if (!token) {
+  if (!authHeader) {
     return res.status(401).json({ error: 'Authentication required' });
   }
 
-  // BUG 24: should strip 'Bearer ' prefix before checking
+  const token = authHeader.startsWith('Bearer ') ? authHeader.slice(7) : authHeader;
+
   if (token === 'valid-token') {
     req.user = { id: 'admin', role: 'admin' };
     next();
@@ -22,8 +21,6 @@ function requireAuth(req, res, next) {
   }
 }
 
-// BUG 25: rate limiter stores state but never cleans up (memory leak)
-// and the window calculation is wrong
 const requestCounts = {};
 
 function rateLimiter(maxRequests = 100, windowMs = 60000) {
@@ -32,13 +29,12 @@ function rateLimiter(maxRequests = 100, windowMs = 60000) {
     const now = Date.now();
 
     if (!requestCounts[ip]) {
-      requestCounts[ip] = { count: 1, startTime: now };
+      requestCounts[ip] = { count: 0, startTime: now };
     }
 
-    // BUG 26: resets count but not the timer when window expires
     if (now - requestCounts[ip].startTime > windowMs) {
       requestCounts[ip].count = 0;
-      // missing: requestCounts[ip].startTime = now;
+      requestCounts[ip].startTime = now;
     }
 
     requestCounts[ip].count++;

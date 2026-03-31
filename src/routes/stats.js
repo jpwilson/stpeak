@@ -1,6 +1,7 @@
 const express = require('express');
 const router = express.Router();
 const Task = require('../models/Task');
+const User = require('../models/User');
 const { formatDate, calculateDaysOverdue } = require('../utils/validators');
 
 // GET task statistics
@@ -16,7 +17,6 @@ router.get('/', (req, res) => {
 // GET overdue tasks
 router.get('/overdue', (req, res) => {
   const tasks = Task.getAll();
-  // BUG 33: overdue logic is wrong because calculateDaysOverdue returns hours not days
   const overdueTasks = tasks.filter(t => {
     if (t.status === 'completed') return false;
     return calculateDaysOverdue(t.createdAt) > 0;
@@ -32,19 +32,23 @@ router.get('/overdue', (req, res) => {
   });
 });
 
-// BUG 34: async handler without proper error handling
-router.get('/summary', async (req, res) => {
-  const tasks = Task.getAll();
-  const stats = Task.getStats();
+// GET summary report
+router.get('/summary', (req, res) => {
+  try {
+    const tasks = Task.getAll();
+    const stats = Task.getStats();
+    const users = User.getAll();
 
-  // BUG 35: undefined variable 'users'
-  const summary = {
-    taskStats: stats,
-    recentTasks: tasks.slice(-5),
-    totalUsers: users.length
-  };
+    const summary = {
+      taskStats: stats,
+      recentTasks: tasks.slice(-5),
+      totalUsers: users.length
+    };
 
-  res.json({ success: true, data: summary });
+    res.json({ success: true, data: summary });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
+  }
 });
 
 module.exports = router;
